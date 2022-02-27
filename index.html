@@ -10,6 +10,11 @@
     text-align: center;
     font-size: 1.6em;
     font-family: monospace;
+    position: relative;
+  }
+
+  #res {
+    position: relative;
   }
 </style>
 <body>
@@ -28,7 +33,8 @@ Punkte:
 
 function dqs(s)
 {
-  return document.querySelector(s)
+  q= document.querySelector(s)
+  return(q)
 }
 
 
@@ -50,6 +56,9 @@ function do_setup(word)
     {
       t = $(`<div class="mcc" id="cc${i}">*</div>`);
       $(display).append(t)
+      t= dqs("#cc" + i)
+      //p1 = t.getBoundingClientRect();
+      t.style.left = (i*2) + "em"
     }
     // END SETUP
 }
@@ -82,7 +91,7 @@ async function run(word) {
     let lenu = word.length;
 
     orders = [];
-    permu = 10;
+    permu = 10 ;
 
   // * 2 just to be sure.
 
@@ -124,7 +133,7 @@ async function run(word) {
     // all done, fade them in.
     for(let i = 0; i < lenu; i++)
     {
-      $("#cc" + i).fadeOut().html( word_a[i] ).fadeIn()
+      $("#cc" + i).html( word_a[i] ).fadeIn()
     }
 
 
@@ -141,17 +150,68 @@ async function run(word) {
         //console.log("changin", v1, v2)
 
       //console.log("word pre", word_a);
-      const t = word_a[v1]
-      word_a[v1] = word_a[v2];
-      word_a[v2] = t
-      //console.log("word post", word_a);
-      do_change(word_a)
+      ani=2
+      if(ani==2)
+      {
+        swap_move("#cc" + v1, "#cc" + v2)
+      } else
+      {
+        const t = word_a[v1]
+        word_a[v1] = word_a[v2];
+        word_a[v2] = t
+        //console.log("word post", word_a);
+        do_change(word_a)
+      }
+
+
 
 
         await Sleep(3000);
     }
   }
 }
+
+function swap_move(e1, e2)
+{
+  e1 = dqs(e1);
+  e2 = dqs(e2);
+  e1.style.animation="";
+  e2.style.animation="";
+  p1 = e1.getBoundingClientRect();
+  p2 = e2.getBoundingClientRect();
+  console.log('bbpos p1', e1, p1)
+  console.log('bbpos p2', e2, p2)
+  if(0==1)
+  {
+    if (p1.left > p2.left)
+    {
+      tmp = e1;
+      e1 = e2;
+      e2 = tmp
+    }
+  }
+  let s = document.createElement('style')
+  s.type = 'text/css';
+  s.innerHTML = `
+  @keyframes kuseful_name_here1 {
+    0% { left: ${p1.left}; }
+    50% { transform: translateY(25%); }
+    100% { left: ${p2.left}; }
+  }
+  @keyframes kuseful_name_here2 {
+    0% { left: ${p2.left}; }
+    50% { transform: translateY(-25%); }
+    100% { left: ${p1.left}; }
+  }
+  `;
+  document.head.appendChild(s)
+  console.log("keyframe-opts:", s.innerHTML)
+  //dqs(e1).classList.add("
+  e1.style.animation="kuseful_name_here1 2s linear";
+  e2.style.animation="kuseful_name_here2 2s linear";
+  
+}
+
 $.ajax({url: 'dyn/wlist.json'}).done(function(d) {
   words = d
   let r = new Uint32Array(1);
