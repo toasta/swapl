@@ -15,6 +15,8 @@
 
   #res {
     position: relative;
+    top: 5em;
+    left: 1em;
   }
 </style>
 <body>
@@ -58,7 +60,8 @@ function do_setup(word)
       $(display).append(t)
       t= dqs("#cc" + i)
       //p1 = t.getBoundingClientRect();
-      t.style.left = (i*2) + "em"
+      t.style.left = (Math.random() * 50) + "px"
+      t.style.top = (Math.random() * 50) + "px"
     }
     // END SETUP
 }
@@ -107,6 +110,7 @@ async function run(word) {
       v2 =  numbers[1] % lenu
 
       if(v1 == v2) { continue; }
+      if(word_a[v1] == word_a[v2]) { continue; }
       // this only catches "single run swaps", could still be endless
       if(co > 0)
       {
@@ -153,62 +157,58 @@ async function run(word) {
       ani=2
       if(ani==2)
       {
-        swap_move("#cc" + v1, "#cc" + v2)
+        swap_move(v1,v2)
       } else
       {
         const t = word_a[v1]
         word_a[v1] = word_a[v2];
         word_a[v2] = t
-        //console.log("word post", word_a);
         do_change(word_a)
       }
 
 
 
 
-        await Sleep(3000);
+        await Sleep(5000);
     }
   }
 }
 
-function swap_move(e1, e2)
+function swap_move(n1, n2)
 {
-  e1 = dqs(e1);
-  e2 = dqs(e2);
+  console.log("swichting", n1, n2);
+  e1 = dqs("#cc" + n1);
+  e2 = dqs("#cc" + n2);
   e1.style.animation="";
   e2.style.animation="";
-  p1 = e1.getBoundingClientRect();
-  p2 = e2.getBoundingClientRect();
-  console.log('bbpos p1', e1, p1)
-  console.log('bbpos p2', e2, p2)
-  if(0==1)
-  {
-    if (p1.left > p2.left)
-    {
-      tmp = e1;
-      e1 = e2;
-      e2 = tmp
-    }
-  }
+  e1.classList.remove("a1", "a2", "adef")
+  e2.classList.remove("a1", "a2", "adef")
+  nn1 = (n1 * 2) + "em";
+  nn2 = (n2 * 2) + "em";
   let s = document.createElement('style')
   s.type = 'text/css';
   s.innerHTML = `
   @keyframes kuseful_name_here1 {
-    0% { left: ${p1.left}; }
-    50% { transform: translateY(25%); }
-    100% { left: ${p2.left}; }
+    0% { color: blue; }
+    50% { transform: translateY(66%); }
+    100% { left: ${nn2}; top: 1em;}
   }
   @keyframes kuseful_name_here2 {
-    0% { left: ${p2.left}; }
-    50% { transform: translateY(-25%); }
-    100% { left: ${p1.left}; }
+    0% { color: red; }
+    50% { transform: translateY(-66%); }
+    100% { left: ${nn1}; top: 1em;}
   }
   `;
   document.head.appendChild(s)
-  console.log("keyframe-opts:", s.innerHTML)
+  //console.log("keyframe-opts:", s.innerHTML)
   //dqs(e1).classList.add("
-  e1.style.animation="kuseful_name_here1 2s linear";
-  e2.style.animation="kuseful_name_here2 2s linear";
+  //e1.classList.add("adef", "a1")
+  //e2.classList.add("adef", "a2")
+
+
+
+  e1.style.animation = 'kuseful_name_here1 1500ms ease-in-out 0 1 forward forwards'
+  e2.style.animation = 'kuseful_name_here2 1500ms ease-in-out 0 1 forward forwards'
   
 }
 
