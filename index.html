@@ -1,0 +1,166 @@
+<html>
+<head>
+<script src="external/live.js"></script>
+<script src="external/jquery-3.6.0.min.js"></script>
+
+<style>
+  .mcc {
+    display: inline-block;
+    width: 1em;
+    text-align: center;
+    font-size: 1.6em;
+    font-family: monospace;
+  }
+</style>
+<body>
+
+<div id="res">
+</div>
+
+<div id="pleft_c">
+Punkte: 
+  <div id="pleft"></div>
+</div>
+
+<script>
+
+
+
+function dqs(s)
+{
+  return document.querySelector(s)
+}
+
+
+function Sleep(milliseconds) {
+ return new Promise(resolve => setTimeout(resolve, parseInt(milliseconds,10)));
+}
+
+
+
+
+function do_setup(word)
+{
+    // BEGIN SETUP
+    lenu = word.length;
+    display = dqs("#res")
+    $(display).innerText = '';
+      cc = []
+    for(let i = 0; i < lenu; i++)
+    {
+      t = $(`<div class="mcc" id="cc${i}">*</div>`);
+      $(display).append(t)
+    }
+    // END SETUP
+}
+
+function do_change(word_a)
+{
+  for(let i = 0; i < word_a.length; i ++)
+  {
+    e = $("#cc" + i)
+    v_old = $(e).text()
+    v_new = word_a[i]
+    // console.log(v_old, "vs", v_new);
+
+    if(v_old != v_new)
+    {
+      $(e).fadeOut().html(v_new).fadeIn();
+    }
+  }
+}
+
+
+// const run = async function() {
+async function run(word) {
+{
+  word = word.toLowerCase();
+  word_a = word.split("");
+  do_setup(word_a);
+    oword = word;
+    mword = word;
+    let lenu = word.length;
+
+    orders = [];
+    permu = 10;
+
+  // * 2 just to be sure.
+
+    // use while ?!?
+    let co = 0;
+    let co2 = 0
+    while(co < permu && co2 < 1000)
+    {
+      co2 ++;
+      let numbers = new Uint32Array(2);
+      window.crypto.getRandomValues(numbers);
+      v1 =  numbers[0] % lenu
+      v2 =  numbers[1] % lenu
+
+      if(v1 == v2) { continue; }
+      // this only catches "single run swaps", could still be endless
+      if(co > 0)
+      {
+        if(1==0
+          || (v1 == orders[co-1][0] && v2 == orders[co-1][1])
+          || (v1 == orders[co-1][1] && v2 == orders[co-1][0])
+        )
+        {
+          continue;
+        }
+      }
+
+      const t = word_a[v1]
+      word_a[v1] = word_a[v2];
+      word_a[v2] = t
+      orders.push([v1, v2])
+      co++;
+    }
+    if(co > 1000)
+    {
+      console.error("loop prevention")
+      return;
+    }
+    // all done, fade them in.
+    for(let i = 0; i < lenu; i++)
+    {
+      $("#cc" + i).fadeOut().html( word_a[i] ).fadeIn()
+    }
+
+
+    for(let i = permu-1; i >=0; i --)
+    {
+      $("#pleft").text(i);
+      // effect one: fade out all and back but with orders applied
+      // tbc
+      // effect default: fade out and fade in one char
+        // at a time
+        // or out and after fading done queued
+        const v1 = orders[i][0]
+        const v2 = orders[i][1]
+        //console.log("changin", v1, v2)
+
+      //console.log("word pre", word_a);
+      const t = word_a[v1]
+      word_a[v1] = word_a[v2];
+      word_a[v2] = t
+      //console.log("word post", word_a);
+      do_change(word_a)
+
+
+        await Sleep(3000);
+    }
+  }
+}
+$.ajax({url: 'dyn/wlist.json'}).done(function(d) {
+  words = d
+  let r = new Uint32Array(1);
+  window.crypto.getRandomValues(r);
+  v1 =  r[0] % words.length;
+  run(words[v1]);
+  });
+
+
+</script>
+</body>
+</html>
