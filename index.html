@@ -34,6 +34,8 @@ Punkte:
 
 <script>
 
+TIME_ANI_SETUP = 5
+TIME_ANI_SWAP  = 1000
 
 
 function dqs(s)
@@ -49,9 +51,8 @@ function Sleep(milliseconds) {
 
 
 
-function do_setup(word_a, anitime=5000)
+function do_setup(word_a, curpos, anitime=5000)
 {
-  console.log("word_a", word_a);
     // BEGIN SETUP
     lenu = word_a.length;
     display = dqs("#res")
@@ -71,10 +72,11 @@ function do_setup(word_a, anitime=5000)
 
     for(let i = 0; i < lenu; i++)
     {
+      console.log("creating id", i, 'w/', word_a[i])
       t = $(`<div class="mcc" id="cc${i}">${word_a[i]}</div>`);
       tmp2 = []
       tmp2.push(`@keyframes rpos${i} {`);
-      offset = 360/lenu * i;
+      offset = Math.floor(360/lenu * i)
       for(let j = 0; j < 360; j+= 1)
       {
 
@@ -89,13 +91,14 @@ function do_setup(word_a, anitime=5000)
         tmp2.push(`100% {
           top: 1em;
           transform: rotate(0deg);
-          left: ${i * 2}em;
+          left: ${curpos[i] * 2}em;
         }
         `);
         $(display).append(t)
         e=dqs("#cc" + i)
         e.style.top = '1em';
-        e.style.left = (i*2) + "em"
+        console.log("moving id", i, "to", curpos[i])
+        e.style.left = (curpos[i]*2) + "em"
       tmp2.push(`}`);
       tmp.push(...tmp2)
 
@@ -145,7 +148,7 @@ function shuffle(array) {
 
 
 let rulenum = 0;
-let curpos = []
+    let elem_at_pos = []
 
 // const run = async function() {
 async function run(_word) {
@@ -156,15 +159,14 @@ async function run(_word) {
     let lenu = word.length;
 
     orders = [];
-    permu = 2 ;
+    permu = 8 ;
 
     let co = 0;
     let co2 = 0
 
-    let curpos = []
     for(let i = 0; i < lenu; i++)
     {
-      curpos[i] = i;
+      elem_at_pos[i] = i;
     }
 
     while(co < permu && co2 < 1000)
@@ -197,51 +199,47 @@ async function run(_word) {
         }
       }
 
-      console.log('before', word_a, v1, v2)
-      t = word_a[v1]
-      word_a[v1] = word_a[v2]
-      word_a[v2] = t
-      console.log('after ', word_a, v1, v2)
+      // we swap elements
+      // so we have to keep track which element is where
+      const t1 = elem_at_pos[v1]
+      const t2 = elem_at_pos[v2]
+      elem_at_pos[v1] = t2;
+      elem_at_pos[v2] = t1;
 
-
-      orders.push([v1, v2])
-
+      orders.push([t1, v1, t2, v2 ])
 
 
       co++;
     }
-    if(co > 1000)
+    if(co2 >= 1000)
     {
       console.error("loop prevention")
       return;
     }
 
-  tim=2500
-  tim=500
-  do_setup(word_a, tim);
+  tim=TIME_ANI_SETUP
+  console.log("setting up", word_a, elem_at_pos)
+  do_setup(word_a, elem_at_pos, tim);
   await Sleep(tim+10);
 
     for(let i = permu-1; i >=0; i --)
     {
       $("#pleft").text(i);
-      // effect one: fade out all and back but with orders applied
-      // tbc
-      // effect default: fade out and fade in one char
-        // at a time
-        // or out and after fading done queued
-        const v1 = orders[i][0]
-        const v2 = orders[i][1]
-        //console.log("changin", v1, v2)
 
-      //console.log("word pre", word_a);
+      const e1 = orders[i][0]
+      const t1 = orders[i][1]
+      const e2 = orders[i][2]
+      const t2 = orders[i][3]
+
       ani=2
       if(ani==2)
       {
-        tim=2000
-        swap_move(v1,v2, i, tim)
-        let t = curpos[v1]
-        curpos[v1] = curpos[v2]
-        curpos[v2] = t;
+        tim=TIME_ANI_SWAP
+        swap_move(e1, t1, e2, t2, i, tim)
+        let t = elem_at_pos[v1]
+        elem_at_pos[v1] = elem_at_pos[v2]
+        elem_at_pos[v2] = t;
+        console.log(elem_at_pos)
         await Sleep(tim+50);
       } else
       {
@@ -257,10 +255,15 @@ async function run(_word) {
   }
 }
 
-async function swap_move(n1, n2, idx, tim)
+async function swap_move(_e1, _t1, _e2, _t2, idx, tim)
 {
-  e1 = dqs("#cc" + n1);
-  e2 = dqs("#cc" + n2);
+  console.log("swap_move called w/", _e1, _t1, _e2, _t2, idx, tim)
+  console.log("instructed to move", _e1, " to position ", _t1)
+  console.log("instructed to move", _e2, " to position ", _t2)
+  e1 = dqs("#cc" + _e1);
+  t1 = (2*_t1)
+  e2 = dqs("#cc" + _e2);
+  t2 = (2*_t2)
 
   let s = document.createElement('style')
   s.type = 'text/css';
@@ -269,24 +272,34 @@ async function swap_move(n1, n2, idx, tim)
       @keyframes transit${idx}0 {
         0% { }
         50% { top: 0em; }
-        100% { top: 1em; left: ${n2*2}em; }
+        100% { top: 1em; left: ${t2}em; }
       }
       `)
   tmp.push(`
       @keyframes transit${idx}1 {
         0% { }
         50% { top: 2em; }
-        100% { top: 1em; left: ${n1*2}em; }
+        100% { top: 1em; left: ${t1}em; }
       }
       `)
   s.innerHTML = tmp.join("\n")
   document.head.appendChild(s)
+
   e1.style.animation = `transit${idx}0 ${tim}ms forwards`
   e2.style.animation = `transit${idx}1 ${tim}ms forwards`
   e1.style.top = '1em';
   e2.style.top = '1em';
-  e1.style.left = (n1*2) + 'em';
-  e2.style.left = (n2*2) + 'em';
+  e1.style.left = (t2) + 'em';
+  e2.style.left = (t1) + 'em';
+
+  /*
+  for(let i = 0; i < lenu; i++)
+  {
+    e= dqs('#cc' + i)
+    e.style.left = (2*i) + "em";
+    e.style.animation = ''
+  }
+  */
 
 }
 
@@ -295,7 +308,7 @@ $.ajax({url: 'dyn/wlist.json'}).done(function(d) {
   let r = new Uint32Array(1);
   window.crypto.getRandomValues(r);
   v1 =  r[0] % words.length;
-  run('Hello world!');
+  run('012')
   });
 
 
