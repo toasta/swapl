@@ -129,11 +129,13 @@ async function run(word) {
     let co = 0;
     let co2 = 0
 
-    let final_pos = []
+    anims = []
+
     for(let i = 0; i < lenu; i++)
     {
-      final_pos[i] = i;
-      curpos[i] = i
+      let cc=(2*i)
+      anims[i] = []
+      anims[i].push(`0% { left: ${cc}em; top: 1em }`)
     }
 
     while(co < permu && co2 < 1000)
@@ -150,7 +152,6 @@ async function run(word) {
       if(v1 == v2) { continue; }
 
       // dont change same characters?
-      if(final_pos[v1] == final_pos[v2]) { continue; }
 
 
       // this only catches "single run swaps", could still be endless
@@ -165,11 +166,29 @@ async function run(word) {
         }
       }
 
-      console.log(final_pos);
+      // v1 and v2 exchange places.
+      for(let j = 0; j < lenu; j++)
+      {
+        
+        let percent = (((co+1) / permu)*100)
+        let half = (((co+1+.5) / permu)*100)
+        if(j==v1)
+        {
+          let q = (v2 * 2)
+          anims[j].push(`${half}% { top:0em; }`)
+          anims[j].push(`${percent}% { left:${q}em; }`)
+        } else if(j==v2)
+        {
+          let q = (v1 * 2)
+          anims[j].push(`${half}% { top:2em; }`)
+          anims[j].push(`${percent}% { left:${q}em; }`)
+        } else
+        {
+            anims[j].push(`${percent}% { }`)
+        }
+      }
+
       console.log("swap", v1, v2);
-      final_pos[v1] = v2
-      final_pos[v2] = v1
-      console.log(final_pos);
 
       orders.push([v1, v2])
       co++;
@@ -179,32 +198,23 @@ async function run(word) {
       console.error("loop prevention")
       return;
     }
-  console.log("final pos before show", final_pos);
-  let s = document.createElement('style')
-  s.type = 'text/css';
-  tmp = []
-    for(let i = 0; i < lenu; i++)
-    {
-      let left = (final_pos[i]*2) + "em"
-      tmp.push(`
-      @keyframes sp${i} {
-        0% { }
-        100% { top: 1em; left: ${left} }
-      }
-      `)
-    }
-  s.innerHTML = tmp.join("\n")
-  document.head.appendChild(s)
-    tim=1000
-    for(let i = 0; i < lenu; i++)
-    {
-      e = dqs("#cc" + i)
-      e.innerText = word_a[i]
-      e.style.animation = `sp${i} ${tim}ms`
-      e.style.animationFillMode = `forwards`;
-    }
 
-    await Sleep(tim+50);
+    let s = document.createElement('style')
+    s.type = 'text/css';
+    t=[]
+    for(let i = 0; i < lenu; i++)
+    {
+      t.push(`@keyframes ttrans${i}0 {`);
+      t.push(...anims[i])
+      t.push(`}`);
+    }
+    s.innerHTML = t.join("\n");
+    for(let i = 0; i < lenu; i++)
+    {
+      dqs("#cc" + i).style.animation = `ttrans0${i} 10s forwards`
+    }
+    console.log(s.innerHTML);
+  document.head.appendChild(s)
     return;
     for(let i = permu-1; i >=0; i --)
     {
@@ -239,53 +249,6 @@ async function run(word) {
   }
 }
 
-async function swap_move(n1, n2)
-{
-  cp1 = curpos[n1]
-  cp2 = curpos[n2]
-
-  e1 = dqs("#cc" + n1);
-  e2 = dqs("#cc" + n2);
-
-  fp1 = (cp1 * 2) + "em";
-  fp2 = (cp2 * 2) + "em";
-
-  tp1 = (n2 * 2) + "em";
-  tp2 = (n1 * 2) + "em";
-  console.log("switching", n1, n2);
-
-  name1 = `ttrans${rulenum}0`
-  name2 = `ttrans${rulenum}1`
-  let s = document.createElement('style')
-  s.type = 'text/css';
-  s.innerHTML = `
-  @keyframes ${name1} {
-    0% { top: 1em;    left: ${fp1};}
-    50% { top: 0em; }
-    100% { top: 1em;  left: ${tp2};}
-  }
-  @keyframes ${name2} {
-    0% { top: 1em;    left: ${fp2}}
-    50% { top: 2em; }
-    100% { top: 1em;  left: ${tp1};}
-  }
-  `;
-  document.head.appendChild(s)
-
-  tim = 500
-
-  e1.style.animation = `${name1} ${tim}ms ease-in-out 0s 1 normal forwards`
-  e2.style.animation = `${name2} ${tim}ms ease-in-out 0s 1 normal forwards`
-  
-  rulenum++;
-  await Sleep(tim+10);
-
-  curpos[n1] = tp1
-  curpos[n2] = tp2
-
-  console.log("updating current positions", n1, tp1, n2, tp2);
-
-}
 
 $.ajax({url: 'dyn/wlist.json'}).done(function(d) {
   words = d
