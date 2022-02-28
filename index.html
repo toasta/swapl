@@ -14,6 +14,9 @@
   }
 
   #res {
+    width: 900px;
+    margin: 0 auto;
+    margin-top: 5em;
     position: relative;
     top: 5em;
     left: 1em;
@@ -45,7 +48,6 @@ function Sleep(milliseconds) {
 }
 
 
-let rulenum = 0;
 
 function do_setup(word)
 {
@@ -65,8 +67,9 @@ function do_setup(word)
       t = $(`<div class="mcc" id="cc${i}">*</div>`);
       $(display).append(t)
       t= dqs("#cc" + i)
-      t.style.left = (sorti[i] * 2) + "em"
-      t.style.top = "2em";
+      v=i/lenu * 2* Math.PI
+      t.style.left = (Math.cos(v)*5 + 5) + "em"
+      t.style.top = Math.sin(v)*5 + "em"
       sorti.push(i)
     }
     // END SETUP
@@ -107,6 +110,8 @@ function shuffle(array) {
 }
 
 
+let rulenum = 0;
+let curpos = []
 
 // const run = async function() {
 async function run(word) {
@@ -119,23 +124,35 @@ async function run(word) {
     let lenu = word.length;
 
     orders = [];
-    permu = 10 ;
+    permu = 2 ;
 
-  // * 2 just to be sure.
-
-    // use while ?!?
     let co = 0;
     let co2 = 0
+
+    let final_pos = []
+    for(let i = 0; i < lenu; i++)
+    {
+      final_pos[i] = i;
+      curpos[i] = i
+    }
+
     while(co < permu && co2 < 1000)
     {
       co2 ++;
       let numbers = new Uint32Array(2);
+      // while asking for more numbers at once
+      // might be faster, we might not have
+      // enough entropy?
       window.crypto.getRandomValues(numbers);
       v1 =  numbers[0] % lenu
       v2 =  numbers[1] % lenu
 
       if(v1 == v2) { continue; }
-      if(word_a[v1] == word_a[v2]) { continue; }
+
+      // dont change same characters?
+      if(final_pos[v1] == final_pos[v2]) { continue; }
+
+
       // this only catches "single run swaps", could still be endless
       if(co > 0)
       {
@@ -148,9 +165,12 @@ async function run(word) {
         }
       }
 
-      const t = word_a[v1]
-      word_a[v1] = word_a[v2];
-      word_a[v2] = t
+      console.log(final_pos);
+      console.log("swap", v1, v2);
+      final_pos[v1] = v2
+      final_pos[v2] = v1
+      console.log(final_pos);
+
       orders.push([v1, v2])
       co++;
     }
@@ -159,15 +179,16 @@ async function run(word) {
       console.error("loop prevention")
       return;
     }
+  console.log("final pos before show", final_pos);
   let s = document.createElement('style')
   s.type = 'text/css';
   tmp = []
     for(let i = 0; i < lenu; i++)
     {
-      let left = (i*2) + "em"
+      let left = (final_pos[i]*2) + "em"
       tmp.push(`
       @keyframes sp${i} {
-        0% { top: 2em;}
+        0% { }
         100% { top: 1em; left: ${left} }
       }
       `)
@@ -180,17 +201,11 @@ async function run(word) {
       e = dqs("#cc" + i)
       e.innerText = word_a[i]
       e.style.animation = `sp${i} ${tim}ms`
+      e.style.animationFillMode = `forwards`;
     }
 
     await Sleep(tim+50);
-    for(let i = 0; i < lenu; i++)
-    {
-      let left = (i*2) + "em"
-      e = dqs("#cc" + i)
-      e.style.left = left;
-      e.style.top = '1em';
-      }
-
+    return;
     for(let i = permu-1; i >=0; i --)
     {
       $("#pleft").text(i);
@@ -226,47 +241,50 @@ async function run(word) {
 
 async function swap_move(n1, n2)
 {
+  cp1 = curpos[n1]
+  cp2 = curpos[n2]
+
   e1 = dqs("#cc" + n1);
   e2 = dqs("#cc" + n2);
-  nn1 = (n1 * 2) + "em";
-  nn2 = (n2 * 2) + "em";
-  console.log("switching", n1, n2, e1, e2, nn1, nn2);
+
+  fp1 = (cp1 * 2) + "em";
+  fp2 = (cp2 * 2) + "em";
+
+  tp1 = (n2 * 2) + "em";
+  tp2 = (n1 * 2) + "em";
+  console.log("switching", n1, n2);
+
   name1 = `ttrans${rulenum}0`
   name2 = `ttrans${rulenum}1`
   let s = document.createElement('style')
   s.type = 'text/css';
   s.innerHTML = `
   @keyframes ${name1} {
-    0% { top: 1em; left: inherit;}
+    0% { top: 1em;    left: ${fp1};}
     50% { top: 0em; }
-    100% { left: 5em; top: 1em;}
+    100% { top: 1em;  left: ${tp2};}
   }
   @keyframes ${name2} {
-    0% { top: 1em; }
+    0% { top: 1em;    left: ${fp2}}
     50% { top: 2em; }
-    100% { left: ${nn1}; top: 1em;}
+    100% { top: 1em;  left: ${tp1};}
   }
   `;
   document.head.appendChild(s)
-  //console.log("keyframe-opts:", s.innerHTML)
-  //dqs(e1).classList.add("
-  //e1.classList.add("adef", "a1")
-  //e2.classList.add("adef", "a2")
-
 
   tim = 500
 
-  e1.style.animation = `${name1} ${tim}ms ease-in-out 0s 1 normal forwards running`
-  e2.style.animation = `${name2} ${tim}ms ease-in-out 0s 1 normal forwards running`
+  e1.style.animation = `${name1} ${tim}ms ease-in-out 0s 1 normal forwards`
+  e2.style.animation = `${name2} ${tim}ms ease-in-out 0s 1 normal forwards`
   
   rulenum++;
   await Sleep(tim+10);
-  e1.style.left = nn2
-  e1.style.top = '1em'
-  e1.style.animation = ''
-  e2.style.left = nn1
-  e2.style.top = '1em'
-  e2.style.animation = ''
+
+  curpos[n1] = tp1
+  curpos[n2] = tp2
+
+  console.log("updating current positions", n1, tp1, n2, tp2);
+
 }
 
 $.ajax({url: 'dyn/wlist.json'}).done(function(d) {
@@ -274,7 +292,7 @@ $.ajax({url: 'dyn/wlist.json'}).done(function(d) {
   let r = new Uint32Array(1);
   window.crypto.getRandomValues(r);
   v1 =  r[0] % words.length;
-  run(words[v1]);
+  run('1234');
   });
 
 
