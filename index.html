@@ -55,23 +55,57 @@ function do_setup(word)
     lenu = word.length;
     display = dqs("#res")
     $(display).innerText = '';
-      cc = []
     sorti = []
     for(let i = 0; i < lenu; i++)
     {
       sorti.push(i)
     }
+    xys = []
+    for(let i = 0; i < 360; i++)
+    {
+      v=i* Math.PI/180;
+      pl = (Math.cos(v))
+      pt = (Math.sin(v))
+      xys.push([pl, pt])
+    }
+
     sorti = shuffle(sorti)
+
+  let s = document.createElement('style')
+  s.type = 'text/css';
+  tmp = []
+
     for(let i = 0; i < lenu; i++)
     {
-      t = $(`<div class="mcc" id="cc${i}">*</div>`);
+      tmp2 = []
+      tmp2.push(`@keyframes rpos${i} {`);
+      offset = 360/lenu * i;
+      for(let j = 0; j < 360+1; j+=90)
+       {
+
+        percent = (j / 360)*100
+        tmp2.push(`${percent}% {
+          top: ${xys[(j+offset)%360][0]*5 + 2.5}em;
+          left: ${xys[(j+offset)%360][1]*5 + 8.5}em;
+        }
+        `);
+        if(j==0)
+        {
+          console.log(tmp2);
+        }
+      }
+      tmp2.push(`}`);
+      tmp.push(...tmp2)
+
+      t = $(`<div class="mcc" id="cc${i}">${sorti[i]}</div>`);
       $(display).append(t)
-      t= dqs("#cc" + i)
-      v=i/lenu * 2* Math.PI
-      t.style.left = (Math.cos(v)*5 + 5) + "em"
-      t.style.top = Math.sin(v)*5 + "em"
-      sorti.push(i)
     }
+  s.innerHTML = tmp.join("\n")
+  document.head.appendChild(s)
+      for(let i = 0; i < lenu; i++)
+       {
+        dqs("#cc" + i).style.animation = `rpos${i} 5s forwards`;
+       }
     // END SETUP
 }
 
@@ -119,6 +153,7 @@ async function run(word) {
   word = word.toLowerCase();
   word_a = word.split("");
   do_setup(word_a);
+  await Sleep(5000);
     oword = word;
     mword = word;
     let lenu = word.length;
@@ -166,10 +201,10 @@ async function run(word) {
       }
 
       console.log(final_pos);
-      console.log("swap", v1, v2);
-      final_pos[v1] = v2
-      final_pos[v2] = v1
-      console.log(final_pos);
+      t = final_pos[v1]
+      final_pos[v1] = final_pos[v2]
+      final_pos[v2] = t
+      console.log("swap", v1, v2, final_pos);
 
       orders.push([v1, v2])
       co++;
@@ -179,23 +214,25 @@ async function run(word) {
       console.error("loop prevention")
       return;
     }
-  console.log("final pos before show", final_pos);
+
   let s = document.createElement('style')
   s.type = 'text/css';
   tmp = []
     for(let i = 0; i < lenu; i++)
     {
-      let left = (final_pos[i]*2) + "em"
+      let left = (final_pos[i]*2)
+      // sp == startPosision
       tmp.push(`
       @keyframes sp${i} {
-        0% { }
-        100% { top: 1em; left: ${left} }
+        0% { transform: rotate(270deg); }
+        50% { top: 0em; left: ${left}em; transform: rotate(0deg) }
+        100% { top: 1em; left: ${left}em; transform: rotate(0deg) }
       }
       `)
     }
   s.innerHTML = tmp.join("\n")
   document.head.appendChild(s)
-    tim=1000
+    tim=2000
     for(let i = 0; i < lenu; i++)
     {
       e = dqs("#cc" + i)
@@ -292,7 +329,7 @@ $.ajax({url: 'dyn/wlist.json'}).done(function(d) {
   let r = new Uint32Array(1);
   window.crypto.getRandomValues(r);
   v1 =  r[0] % words.length;
-  run('1234');
+  run('012345');
   });
 
 
