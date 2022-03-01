@@ -11,6 +11,12 @@
     font-size: 1.6em;
     font-family: monospace;
     position: absolute;
+    /*
+    background-color: black;
+    color: white;
+    padding: .33em;
+    margin: .33em;
+    */
   }
 
   #res {
@@ -34,8 +40,8 @@ Punkte:
 
 <script>
 
-TIME_ANI_SETUP = 5
-TIME_ANI_SWAP  = 1000
+TIME_ANI_SETUP = 3000
+TIME_ANI_SWAP  = 1500
 
 
 function dqs(s)
@@ -51,12 +57,14 @@ function Sleep(milliseconds) {
 
 
 
-function do_setup(word_a, curpos, anitime=5000)
+function do_setup(word_a, elem_at_pos, anitime=5000)
 {
     // BEGIN SETUP
     lenu = word_a.length;
     display = dqs("#res")
     $(display).innerText = '';
+
+    // rotations
     xys = []
     for(let i = 0; i < 360; i++)
     {
@@ -66,17 +74,28 @@ function do_setup(word_a, curpos, anitime=5000)
       xys.push([pl, pt])
     }
 
+    order = []
+    for(let i = 0; i < lenu; i++)
+    {
+      order[i] = i;
+    }
+
+    order = shuffle(order)
+
   let s = document.createElement('style')
   s.type = 'text/css';
   tmp = []
 
-    for(let i = 0; i < lenu; i++)
+    for(let j = 0; j < lenu; j++)
     {
-      console.log("creating id", i, 'w/', word_a[i])
+
+      i = order[j]
+      
       t = $(`<div class="mcc" id="cc${i}">${word_a[i]}</div>`);
       tmp2 = []
       tmp2.push(`@keyframes rpos${i} {`);
       offset = Math.floor(360/lenu * i)
+      last = ['', '']
       for(let j = 0; j < 360; j+= 1)
       {
 
@@ -88,17 +107,32 @@ function do_setup(word_a, curpos, anitime=5000)
         }
         `);
       }
+      pos2elem = []
+      // elem to pos
+      // pos -- idx in array
+      // 0 1 2 3 4
+      // 1 0 3 4 2
+        for(let k = 0; k < lenu; k++)
+        {
+          pos2elem[ elem_at_pos[k] ] = k
+          // ?!?
+        }
+        left = (2 * pos2elem[i]) + "em"
+
         tmp2.push(`100% {
-          top: 1em;
           transform: rotate(0deg);
-          left: ${curpos[i] * 2}em;
+          left: ${left};
+          top: 1em;
+          //padding: .33em;
+          //margin: .33em;
+          //background-color: black;
+          //color: white;
         }
         `);
         $(display).append(t)
         e=dqs("#cc" + i)
         e.style.top = '1em';
-        console.log("moving id", i, "to", curpos[i])
-        e.style.left = (curpos[i]*2) + "em"
+        set_pos_after_ani(e, left, '1em')
       tmp2.push(`}`);
       tmp.push(...tmp2)
 
@@ -107,9 +141,19 @@ function do_setup(word_a, curpos, anitime=5000)
   document.head.appendChild(s)
       for(let i = 0; i < lenu; i++)
        {
-        dqs("#cc" + i).style.animation = `rpos${i} ${anitime/1000}s`;
+        dqs("#cc" + i).style.animation = `rpos${i} ${anitime/1000}s forwards`;
        }
     // END SETUP
+}
+
+function set_pos_after_ani(e, left, top)
+{
+  
+        e.addEventListener('animationend', (ev) => {
+          e=ev.target;
+          e.style.left = left;
+          e.style.top = top;
+        });
 }
 
 function do_change(word_a)
@@ -154,6 +198,7 @@ let rulenum = 0;
 async function run(_word) {
 {
 
+    console.log("got", _word)
     const word = _word.toLowerCase();
     let word_a = word.split("");
     let lenu = word.length;
@@ -206,7 +251,7 @@ async function run(_word) {
       elem_at_pos[v1] = t2;
       elem_at_pos[v2] = t1;
 
-      orders.push([t1, v1, t2, v2 ])
+      orders.push([t1, v2, t2, v1 ])
 
 
       co++;
@@ -218,17 +263,24 @@ async function run(_word) {
     }
 
   tim=TIME_ANI_SETUP
-  console.log("setting up", word_a, elem_at_pos)
   do_setup(word_a, elem_at_pos, tim);
+
+  for(let i = 0; i < lenu; i++)
+  {
+  }
   await Sleep(tim+10);
 
+    // traverse back
     for(let i = permu-1; i >=0; i --)
     {
       $("#pleft").text(i);
 
-      const e1 = orders[i][0]
+      const id1 = orders[i][0]
+      const id2 = orders[i][2]
+      
+      const e1 = dqs("#cc" + id1)
+      const e2 = dqs("#cc" + id2)
       const t1 = orders[i][1]
-      const e2 = orders[i][2]
       const t2 = orders[i][3]
 
       ani=2
@@ -236,10 +288,8 @@ async function run(_word) {
       {
         tim=TIME_ANI_SWAP
         swap_move(e1, t1, e2, t2, i, tim)
-        let t = elem_at_pos[v1]
-        elem_at_pos[v1] = elem_at_pos[v2]
-        elem_at_pos[v2] = t;
-        console.log(elem_at_pos)
+        elem_at_pos[t1] = id1
+        elem_at_pos[t2] = id2
         await Sleep(tim+50);
       } else
       {
@@ -255,31 +305,28 @@ async function run(_word) {
   }
 }
 
-async function swap_move(_e1, _t1, _e2, _t2, idx, tim)
+async function swap_move(e1, _t1, e2, _t2, idx, tim)
 {
-  console.log("swap_move called w/", _e1, _t1, _e2, _t2, idx, tim)
-  console.log("instructed to move", _e1, " to position ", _t1)
-  console.log("instructed to move", _e2, " to position ", _t2)
-  e1 = dqs("#cc" + _e1);
   t1 = (2*_t1)
-  e2 = dqs("#cc" + _e2);
   t2 = (2*_t2)
 
   let s = document.createElement('style')
   s.type = 'text/css';
   tmp = []
+  endpos1 = t2 + "em";
+  endpos2 = t1 + "em";
   tmp.push(`
       @keyframes transit${idx}0 {
         0% { }
         50% { top: 0em; }
-        100% { top: 1em; left: ${t2}em; }
+        100% { top: 1em; left: ${endpos1}; }
       }
       `)
   tmp.push(`
       @keyframes transit${idx}1 {
         0% { }
         50% { top: 2em; }
-        100% { top: 1em; left: ${t1}em; }
+        100% { top: 1em; left: ${endpos2}; }
       }
       `)
   s.innerHTML = tmp.join("\n")
@@ -287,10 +334,8 @@ async function swap_move(_e1, _t1, _e2, _t2, idx, tim)
 
   e1.style.animation = `transit${idx}0 ${tim}ms forwards`
   e2.style.animation = `transit${idx}1 ${tim}ms forwards`
-  e1.style.top = '1em';
-  e2.style.top = '1em';
-  e1.style.left = (t2) + 'em';
-  e2.style.left = (t1) + 'em';
+  set_pos_after_ani(e1, endpos1, '1em');
+  set_pos_after_ani(e2, endpos2, '1em');
 
   /*
   for(let i = 0; i < lenu; i++)
@@ -308,7 +353,7 @@ $.ajax({url: 'dyn/wlist.json'}).done(function(d) {
   let r = new Uint32Array(1);
   window.crypto.getRandomValues(r);
   v1 =  r[0] % words.length;
-  run('012')
+  run(words[v1])
   });
 
 
